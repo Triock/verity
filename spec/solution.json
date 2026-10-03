@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "id": "software-manager",
+  "components": [
+    {
+      "id": "spec-model",
+      "kind": "library",
+      "language": "python",
+      "depends_on": [],
+      "data_sets": []
+    },
+    {
+      "id": "specctl",
+      "kind": "application",
+      "language": "python",
+      "depends_on": ["spec-model"],
+      "data_sets": []
+    }
+  ],
+  "data_sets": []
+}
