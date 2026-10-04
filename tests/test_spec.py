@@ -1,4 +1,5 @@
 import copy
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -83,6 +84,29 @@ class SpecTests(unittest.TestCase):
         raw["data_sets"][0]["recovery"]["rpo_minutes"] = -1
         with self.assertRaisesRegex(SpecError, "history.*rpo_minutes"):
             parse_spec(raw)
+
+    def test_rejects_duplicate_json_keys_in_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "duplicate.json"
+            path.write_text(
+                '{"version":1,"id":"first","id":"second","components":[],"data_sets":[]}'
+            )
+            with self.assertRaisesRegex(SpecError, "duplicate JSON key: id"):
+                load_spec(path)
+
+    def test_validates_large_reverse_ordered_dependency_chain(self):
+        raw = {"version": 1, "id": "large", "components": [], "data_sets": []}
+        for index in reversed(range(1200)):
+            raw["components"].append(
+                {
+                    "id": f"c{index}",
+                    "kind": "library",
+                    "language": "python",
+                    "depends_on": [f"c{index - 1}"] if index else [],
+                    "data_sets": [],
+                }
+            )
+        self.assertEqual(len(parse_spec(raw).components), 1200)
 
 
 if __name__ == "__main__":

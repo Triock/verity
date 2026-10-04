@@ -74,6 +74,23 @@ def _minutes(value: object, location: str) -> int:
     return value
 
 
+def decode_json(content: bytes | str, location: str) -> object:
+    """Decode JSON without silently replacing duplicate object keys."""
+
+    def unique_pairs(pairs: list[tuple[str, object]]) -> dict:
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise SpecError(f"{location}: duplicate JSON key: {key}")
+            result[key] = value
+        return result
+
+    try:
+        return json.loads(content, object_pairs_hook=unique_pairs)
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise SpecError(f"{location}: {exc}") from exc
+
+
 def parse_spec(raw: dict) -> SolutionSpec:
     root = _object(raw, "spec")
     if root.get("version") != 1 or type(root.get("version")) is not int:
@@ -135,22 +152,22 @@ def parse_spec(raw: dict) -> SolutionSpec:
             raise SpecError(f"{data.id} has unknown owner: {data.owner}")
 
     dependencies = {component.id: component.depends_on for component in components}
-    visiting = set()
-    visited = set()
-
-    def visit(component_id: str) -> None:
-        if component_id in visiting:
-            raise SpecError(f"dependency cycle at {component_id}")
-        if component_id in visited:
-            return
-        visiting.add(component_id)
-        for dependency in dependencies[component_id]:
-            visit(dependency)
-        visiting.remove(component_id)
-        visited.add(component_id)
-
-    for component_id in dependencies:
-        visit(component_id)
+    indegree = {component_id: len(edges) for component_id, edges in dependencies.items()}
+    consumers = {component_id: [] for component_id in dependencies}
+    for component_id, edges in dependencies.items():
+        for dependency in edges:
+            consumers[dependency].append(component_id)
+    ready = [component_id for component_id, count in indegree.items() if count == 0]
+    visited_count = 0
+    while ready:
+        component_id = ready.pop()
+        visited_count += 1
+        for consumer in consumers[component_id]:
+            indegree[consumer] -= 1
+            if indegree[consumer] == 0:
+                ready.append(consumer)
+    if visited_count != len(dependencies):
+        raise SpecError("dependency cycle in component graph")
 
     return SolutionSpec(1, solution_id, tuple(components), tuple(data_sets))
 
@@ -158,9 +175,10 @@ def parse_spec(raw: dict) -> SolutionSpec:
 def load_spec(path: str | Path) -> SolutionSpec:
     source = Path(path)
     try:
-        raw = json.loads(source.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        content = source.read_bytes()
+    except OSError as exc:
         raise SpecError(f"{source}: {exc}") from exc
+    raw = decode_json(content, str(source))
     try:
         return parse_spec(raw)
     except SpecError as exc:

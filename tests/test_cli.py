@@ -69,6 +69,18 @@ class CliTests(unittest.TestCase):
         self.assertEqual(lock["spec_sha256"], hashlib.sha256(SPEC_PATH.read_bytes()).hexdigest())
         self.assertEqual([entry["id"] for entry in lock["components"]], ["spec-model", "specctl"])
 
+    def test_lock_rejects_duplicate_artifact_keys(self):
+        with tempfile.TemporaryDirectory() as directory:
+            inventory_path = Path(directory) / "artifacts.json"
+            inventory_path.write_text(
+                '{"spec-model":"' + "a" * 64 + '","specctl":"' + "b" * 64
+                + '","specctl":"' + "c" * 64 + '"}'
+            )
+            code, output, errors = run_cli(["lock", str(SPEC_PATH), str(inventory_path)])
+        self.assertEqual(code, 2)
+        self.assertEqual(output, "")
+        self.assertIn("duplicate JSON key: specctl", errors)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .graph import build_order, change_impact
 from .release import ReleaseError, compile_release
-from .spec import SpecError, load_spec, parse_spec
+from .spec import SpecError, decode_json, load_spec, parse_spec
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -35,10 +35,11 @@ def _read_lock_inputs(spec_path: str, artifacts_path: str):
     inventory = Path(artifacts_path)
     try:
         spec_bytes = source.read_bytes()
-        raw_spec = json.loads(spec_bytes)
-        artifacts = json.loads(inventory.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        inventory_bytes = inventory.read_bytes()
+    except OSError as exc:
         raise SpecError(f"cannot read lock inputs {source} and {inventory}: {exc}") from exc
+    raw_spec = decode_json(spec_bytes, str(source))
+    artifacts = decode_json(inventory_bytes, str(inventory))
     try:
         spec = parse_spec(raw_spec)
     except SpecError as exc:
