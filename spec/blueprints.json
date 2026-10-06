@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "components": [
+    {"component_id": "spec-model", "mode": "bootstrap", "source_path": "src/specctl/spec.py"},
+    {"component_id": "specctl", "mode": "bootstrap", "source_path": "src/specctl/cli.py"}
+  ]
+}

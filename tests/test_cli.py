@@ -9,7 +9,7 @@ from pathlib import Path
 from specctl.cli import main
 
 
-SPEC_PATH = Path(__file__).resolve().parents[1] / "spec" / "solution.json"
+SPEC_PATH = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "solution-v1.json"
 
 
 def run_cli(arguments):

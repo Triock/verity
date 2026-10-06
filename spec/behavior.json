@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "requirements": [
+    {"id": "validate-model", "use_case_id": "inspect-spec", "statement": "Reject malformed or inconsistent specification records and dependencies", "contract_ids": ["validated-spec"]},
+    {"id": "inspect-model", "use_case_id": "inspect-spec", "statement": "Expose validation, build order, impact, and canonical resolution through the command line", "contract_ids": ["validated-spec"]}
+  ],
+  "contracts": [
+    {"id": "validated-spec", "revision": "1", "description": "The specification model validates records and exposes a component graph to consumers"}
+  ]
+}

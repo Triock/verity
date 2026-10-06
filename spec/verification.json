@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "reject-invalid-spec",
+      "requirement_ids": ["validate-model"],
+      "target_component": "spec-model",
+      "modality": "cli",
+      "input": {"command": "validate", "spec": "invalid fixture"},
+      "expected": {"kind": "rubric", "text": "The command exits unsuccessfully and identifies the invalid field or reference"}
+    },
+    {
+      "id": "resolve-self-spec",
+      "requirement_ids": ["inspect-model"],
+      "target_component": "specctl",
+      "modality": "cli",
+      "input": {"command": "resolve", "spec": "spec/solution.json"},
+      "expected": {"kind": "rubric", "text": "The command emits a v2 resolved document and stable semantic digest"}
+    }
+  ]
+}

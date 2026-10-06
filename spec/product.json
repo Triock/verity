@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "actors": [
+    {"id": "spec-author", "name": "Specification author"}
+  ],
+  "use_cases": [
+    {"id": "inspect-spec", "actor_id": "spec-author", "goal": "Validate and inspect the service specification before implementation"}
+  ]
+}
