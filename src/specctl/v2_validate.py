@@ -220,7 +220,11 @@ def validate_v2(sources: V2Sources) -> ValidatedV2:
         r["requirement_ids"] = _names(r["requirement_ids"], f"{where}.requirement_ids", True)
         for ref in r["requirement_ids"]:
             _reference(ref, requirement_ids, where)
-        _reference(_text(r["target_component"], f"{where}.target_component"), component_ids, where)
+        target = _text(r["target_component"], f"{where}.target_component")
+        _reference(target, component_ids, where)
+        for ref in r["requirement_ids"]:
+            if ref not in by_component[target]["implements"]:
+                raise SpecError(f"{where}: requirement {ref} is not implemented by target {target}")
         if r["modality"] not in ("cli", "service", "ui"):
             raise SpecError(f"{where}.modality is unsupported")
         expected = r["expected"]

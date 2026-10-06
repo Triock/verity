@@ -61,8 +61,8 @@ def load_v2_sources(index_path: str | Path, index_bytes: bytes | None = None) ->
     solution_id = _nonempty(raw["id"], f"{index}: id")
     paths = _keys(raw["layers"], set(LAYER_NAMES), f"{index}: layers")
     layers = {}
-    digests = {"solution.json": hashlib.sha256(content).hexdigest()}
-    seen = {"solution.json"}
+    digests = {index.name: hashlib.sha256(content).hexdigest()}
+    seen = {index.name}
     for name in LAYER_NAMES:
         location = f"{index}: layers.{name}"
         path, relative = _layer_path(root, paths[name], location)

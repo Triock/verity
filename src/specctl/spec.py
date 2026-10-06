@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -85,8 +86,22 @@ def decode_json(content: bytes | str, location: str) -> object:
             result[key] = value
         return result
 
+    def reject_constant(value: str) -> None:
+        raise SpecError(f"{location}: invalid JSON numeric constant: {value}")
+
+    def finite_float(value: str) -> float:
+        result = float(value)
+        if not math.isfinite(result):
+            raise SpecError(f"{location}: non-finite JSON number: {value}")
+        return result
+
     try:
-        return json.loads(content, object_pairs_hook=unique_pairs)
+        return json.loads(
+            content,
+            object_pairs_hook=unique_pairs,
+            parse_constant=reject_constant,
+            parse_float=finite_float,
+        )
     except (UnicodeError, json.JSONDecodeError) as exc:
         raise SpecError(f"{location}: {exc}") from exc
 

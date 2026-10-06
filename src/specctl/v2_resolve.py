@@ -12,7 +12,7 @@ from .v2_validate import validate_v2
 
 
 def canonical_bytes(value: object) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
 
 
 def resolve_v2(index_path: str | Path, index_bytes: bytes | None = None) -> dict:

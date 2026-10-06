@@ -107,6 +107,12 @@ class V2ValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(SpecError, "req.*acceptance"):
             validate_v2(bundle)
 
+    def test_acceptance_case_must_target_an_implementer(self):
+        bundle = valid_bundle()
+        bundle.layers["verification"]["cases"][0]["target_component"] = "app"
+        with self.assertRaisesRegex(SpecError, "case.*req.*implement"):
+            validate_v2(bundle)
+
 
 if __name__ == "__main__":
     unittest.main()

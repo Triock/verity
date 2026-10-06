@@ -30,11 +30,34 @@ class V2SourceTests(unittest.TestCase):
             self.assertEqual(sources.source_sha256["solution.json"], hashlib.sha256(index.read_bytes()).hexdigest())
             self.assertEqual(sources.source_sha256["product.json"], hashlib.sha256((index.parent / "product.json").read_bytes()).hexdigest())
 
+    def test_names_index_digest_with_actual_index_filename(self):
+        with tempfile.TemporaryDirectory() as directory:
+            index = write_layers(directory)
+            candidate = index.with_name("candidate.json")
+            index.rename(candidate)
+            sources = load_v2_sources(candidate)
+            self.assertEqual(sources.source_sha256["candidate.json"], hashlib.sha256(candidate.read_bytes()).hexdigest())
+            self.assertNotIn("solution.json", sources.source_sha256)
+
     def test_rejects_duplicate_json_keys(self):
         with tempfile.TemporaryDirectory() as directory:
             index = write_layers(directory)
             (index.parent / "product.json").write_text('{"version":1,"version":1}')
             with self.assertRaisesRegex(SpecError, "product.json.*duplicate JSON key"):
+                load_v2_sources(index)
+
+    def test_rejects_non_json_numeric_constant(self):
+        with tempfile.TemporaryDirectory() as directory:
+            index = write_layers(directory)
+            (index.parent / "product.json").write_text('{"version":1,"value":NaN}')
+            with self.assertRaisesRegex(SpecError, "product.json.*NaN"):
+                load_v2_sources(index)
+
+    def test_rejects_nonfinite_exponent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            index = write_layers(directory)
+            (index.parent / "product.json").write_text('{"version":1,"value":1e999}')
+            with self.assertRaisesRegex(SpecError, "product.json.*non-finite"):
                 load_v2_sources(index)
 
     def test_rejects_missing_layer(self):
