@@ -11,6 +11,8 @@ PYTHONPATH=src python3 -m specctl impact spec/solution.json spec-model --directi
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
+GitHub Actions runs these tests and self-spec commands on pull requests and pushes to `main`.
+
 To create a release lock, supply a JSON object mapping **every** component ID to its built artifact's SHA-256 digest:
 
 ```bash
