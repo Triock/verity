@@ -1,10 +1,12 @@
 {
   "version": 1,
   "actors": [
-    {"id": "spec-author", "name": "Specification author"}
+    {"id": "spec-author", "name": "Specification author"},
+    {"id": "issue-maintainer", "name": "Issue maintainer"}
   ],
   "use_cases": [
     {"id": "inspect-spec", "actor_id": "spec-author", "goal": "Validate and inspect the service specification before implementation"},
-    {"id": "inspect-catalog", "actor_id": "spec-author", "goal": "Inspect declared component interfaces and dependencies from generated code"}
+    {"id": "inspect-catalog", "actor_id": "spec-author", "goal": "Inspect declared component interfaces and dependencies from generated code"},
+    {"id": "capture-issue", "actor_id": "issue-maintainer", "goal": "Capture a triaged GitHub issue as a reproducible input without executing its content"}
   ]
 }

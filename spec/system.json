@@ -26,9 +26,9 @@
       "kind": "application",
       "language": "python",
       "depends_on": ["spec-model", "component-catalog"],
-      "data_sets": [],
-      "implements": ["inspect-model"],
-      "provides": [],
+      "data_sets": ["issue-snapshots"],
+      "implements": ["inspect-model", "import-github-issue"],
+      "provides": ["issue-intake"],
       "requires": [
         {"contract_id": "validated-spec", "accepted_revisions": ["1"]},
         {"contract_id": "catalog-query", "accepted_revisions": ["1"]}
