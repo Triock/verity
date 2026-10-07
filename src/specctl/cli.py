@@ -10,13 +10,16 @@ from pathlib import Path
 
 from .graph import build_order, change_impact
 from .release import ReleaseError, compile_release
-from .spec import SpecError, decode_json, load_spec, parse_spec
+from .spec import SpecError, decode_json, parse_spec
+from .v2_resolve import resolve_v2
+from .v2_source import load_v2_sources
+from .v2_validate import validate_v2
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="specctl")
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("validate", "order"):
+    for name in ("validate", "order", "resolve"):
         commands.add_parser(name).add_argument("spec")
     impact = commands.add_parser("impact")
     impact.add_argument("spec")
@@ -35,16 +38,37 @@ def _read_lock_inputs(spec_path: str, artifacts_path: str):
     inventory = Path(artifacts_path)
     try:
         spec_bytes = source.read_bytes()
+    except OSError as exc:
+        raise SpecError(f"cannot read lock input {source}: {exc}") from exc
+    raw_spec = decode_json(spec_bytes, str(source))
+    if isinstance(raw_spec, dict) and raw_spec.get("version") == 2:
+        raise SpecError("v2 release locks are not supported yet")
+    try:
         inventory_bytes = inventory.read_bytes()
     except OSError as exc:
-        raise SpecError(f"cannot read lock inputs {source} and {inventory}: {exc}") from exc
-    raw_spec = decode_json(spec_bytes, str(source))
+        raise SpecError(f"cannot read lock input {inventory}: {exc}") from exc
     artifacts = decode_json(inventory_bytes, str(inventory))
     try:
         spec = parse_spec(raw_spec)
     except SpecError as exc:
         raise SpecError(f"{source}: {exc}") from exc
     return spec, hashlib.sha256(spec_bytes).hexdigest(), artifacts
+
+
+def _read_spec(path: str):
+    source = Path(path)
+    try:
+        content = source.read_bytes()
+    except OSError as exc:
+        raise SpecError(f"{source}: {exc}") from exc
+    raw = decode_json(content, str(source))
+    version = raw.get("version") if isinstance(raw, dict) else None
+    if version == 2 and type(version) is int:
+        return validate_v2(load_v2_sources(source, content)).graph, content
+    try:
+        return parse_spec(raw), content
+    except SpecError as exc:
+        raise SpecError(f"{source}: {exc}") from exc
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -54,8 +78,13 @@ def main(argv: list[str] | None = None) -> int:
             spec, spec_digest, artifacts = _read_lock_inputs(args.spec, args.artifacts_json)
             result = compile_release(spec, spec_digest, artifacts)
         else:
-            spec = load_spec(args.spec)
-            if args.command == "validate":
+            spec, content = _read_spec(args.spec)
+            if args.command == "resolve":
+                raw = decode_json(content, args.spec)
+                if raw["version"] != 2:
+                    raise SpecError("resolve requires a v2 specification")
+                result = resolve_v2(args.spec, content)
+            elif args.command == "validate":
                 result = {
                     "solution_id": spec.id,
                     "components": len(spec.components),

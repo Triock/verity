@@ -30,3 +30,4 @@ jobs:
           python -m specctl validate spec/solution.json
           python -m specctl order spec/solution.json
           python -m specctl impact spec/solution.json spec-model --direction consumers
+          python -m specctl resolve spec/solution.json

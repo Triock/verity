@@ -38,7 +38,7 @@ def valid_raw():
 
 class SpecTests(unittest.TestCase):
     def test_loads_the_management_service_spec(self):
-        path = Path(__file__).resolve().parents[1] / "spec" / "solution.json"
+        path = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "solution-v1.json"
         spec = load_spec(path)
         self.assertEqual(spec.id, "software-manager")
         self.assertEqual({component.id for component in spec.components}, {"spec-model", "specctl"})
