@@ -58,6 +58,7 @@ class GitHubIssueTests(unittest.TestCase):
             ({"updated_at": "2026-99-07T13:00:00Z"}, "updated_at"),
             ({"title": "x" * 513}, "title"),
             ({"body": "x" * 65537}, "body"),
+            ({"body": 0}, "body"),
             ({"labels": [{"name": "verity:ready"}, {"name": "verity:ready"}]}, "labels"),
         ):
             with self.subTest(changed=list(changed)):
@@ -89,6 +90,12 @@ class GitHubIssueTests(unittest.TestCase):
 
             with self.assertRaisesRegex(SpecError, "scope"):
                 fetch_issue(7, token, api_call=wrong_scope)
+
+            def malformed_scope(base, credential, method, path):
+                return {"total_count": 1, "repositories": [None]}
+
+            with self.assertRaisesRegex(SpecError, "scope"):
+                fetch_issue(7, token, api_call=malformed_scope)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,8 @@ from pathlib import Path
 from .graph import build_order, change_impact
 from .candidate import build_candidate, verify_current
 from .candidate_publish import submit_candidate
+from .github_issues import fetch_issue
+from .issue_registry import record_issue
 from .release import ReleaseError, compile_release
 from .spec import SpecError, decode_json, parse_spec
 from .v2_resolve import resolve_v2
@@ -43,6 +45,11 @@ def _parser() -> argparse.ArgumentParser:
     submit = candidate_commands.add_parser("submit")
     submit.add_argument("--branch", required=True)
     submit.add_argument("--token-file", required=True)
+    issue = commands.add_parser("issue")
+    issue_commands = issue.add_subparsers(dest="issue_command", required=True)
+    issue_import = issue_commands.add_parser("import")
+    issue_import.add_argument("number", type=int)
+    issue_import.add_argument("--token-file", required=True)
     return parser
 
 
@@ -87,7 +94,9 @@ def _read_spec(path: str):
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
-        if args.command == "catalog":
+        if args.command == "issue":
+            result = record_issue(Path.cwd(), fetch_issue(args.number, Path(args.token_file)))
+        elif args.command == "catalog":
             try:
                 from .generated_catalog import get_component
             except ModuleNotFoundError as exc:

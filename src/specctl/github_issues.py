@@ -50,7 +50,8 @@ def normalize_issue(raw: object, number: int) -> dict:
     if raw.get("state") != "open":
         raise SpecError("GitHub issue must be open")
     title = _bounded_text(raw.get("title"), "title", 512)
-    body = _bounded_text(raw.get("body") or "", "body", 65536, allow_empty=True)
+    raw_body = raw.get("body")
+    body = _bounded_text("" if raw_body is None else raw_body, "body", 65536, allow_empty=True)
     updated_at = raw.get("updated_at")
     if not isinstance(updated_at, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", updated_at):
         raise SpecError("GitHub issue updated_at must be a UTC timestamp")
@@ -93,7 +94,8 @@ def fetch_issue(number: int, token_path: Path, api_call=_api) -> dict:
     number = _positive(number, "issue number")
     token = _token(Path(token_path))
     scope = api_call(API_BASE, token, "GET", "/installation/repositories")
-    if not isinstance(scope, dict) or scope.get("total_count") != 1 or [item.get("full_name") for item in scope.get("repositories", [])] != [REPOSITORY]:
+    repositories = scope.get("repositories") if isinstance(scope, dict) else None
+    if not isinstance(scope, dict) or scope.get("total_count") != 1 or not isinstance(repositories, list) or len(repositories) != 1 or not isinstance(repositories[0], dict) or repositories[0].get("full_name") != REPOSITORY:
         raise SpecError("GitHub App token scope is not exclusively Triock/verity")
     raw = api_call(API_BASE, token, "GET", f"/repos/{REPOSITORY}/issues/{number}")
     return normalize_issue(raw, number)
