@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from .graph import build_order, change_impact
+from .candidate import build_candidate, verify_current
 from .release import ReleaseError, compile_release
 from .spec import SpecError, decode_json, parse_spec
 from .v2_resolve import resolve_v2
@@ -30,6 +31,14 @@ def _parser() -> argparse.ArgumentParser:
     lock = commands.add_parser("lock")
     lock.add_argument("spec")
     lock.add_argument("artifacts_json")
+    catalog = commands.add_parser("catalog")
+    catalog.add_argument("component")
+    candidate = commands.add_parser("candidate")
+    candidate_commands = candidate.add_subparsers(dest="candidate_command", required=True)
+    build = candidate_commands.add_parser("build")
+    build.add_argument("index")
+    build.add_argument("--revision", required=True)
+    candidate_commands.add_parser("verify-current")
     return parser
 
 
@@ -74,7 +83,22 @@ def _read_spec(path: str):
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
-        if args.command == "lock":
+        if args.command == "catalog":
+            try:
+                from .generated_catalog import get_component
+            except ModuleNotFoundError as exc:
+                if exc.name != "specctl.generated_catalog":
+                    raise
+                raise SpecError("generated catalog is missing; run specctl candidate build") from exc
+            result = get_component(args.component)
+            if result is None:
+                raise SpecError(f"unknown catalog component: {args.component}")
+        elif args.command == "candidate":
+            if args.candidate_command == "build":
+                result = build_candidate(Path(args.index), args.revision, Path.cwd())
+            else:
+                result = verify_current(Path.cwd())
+        elif args.command == "lock":
             spec, spec_digest, artifacts = _read_lock_inputs(args.spec, args.artifacts_json)
             result = compile_release(spec, spec_digest, artifacts)
         else:

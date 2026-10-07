@@ -20,10 +20,11 @@ def git(repo, *args):
 def candidate_repo(directory):
     repo = Path(directory)
     shutil.copytree(SOURCE_ROOT / "spec", repo / "spec")
-    (repo / "src" / "specctl").mkdir(parents=True)
-    shutil.copy2(SOURCE_ROOT / "src" / "specctl" / "catalog_generator.py", repo / "src" / "specctl" / "catalog_generator.py")
+    shutil.copytree(SOURCE_ROOT / "src" / "specctl", repo / "src" / "specctl", ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "generated_catalog.py"))
     (repo / "tools").mkdir()
     shutil.copy2(SOURCE_ROOT / "tools" / "catalog-python.json", repo / "tools" / "catalog-python.json")
+    (repo / "tests").mkdir()
+    (repo / "tests" / "test_smoke.py").write_text("import unittest\n\nclass Smoke(unittest.TestCase):\n    def test_works(self):\n        self.assertTrue(True)\n")
     git(repo, "init", "-q")
     git(repo, "add", ".")
     git(repo, "-c", "user.name=Richard Hillman", "-c", "user.email=triock@gmail.com", "commit", "-qm", "fixture")

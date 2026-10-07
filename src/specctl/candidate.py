@@ -156,20 +156,74 @@ def build_candidate(index_path: Path, revision: str, repo: Path) -> dict:
     os.replace(staged_name, artifact_path)
     _write_json(record_path, record)
     _write_json(repo / CURRENT_POINTER, {"candidate_id": record["candidate_id"]})
+    evidence = evaluate_candidate(record, repo)
+    _write_json(record_path.parent / "evidence.json", evidence)
     return record
+
+
+def evaluate_candidate(record: dict, repo: Path) -> dict:
+    """Run the catalog case and unit suite in fresh processes."""
+    repo = Path(repo).resolve()
+    resolved = resolve_v2(repo / record["index_path"])["resolved"]
+    cases = [case for case in resolved["layers"]["verification"]["cases"] if case["id"] == "query-component-catalog"]
+    if len(cases) != 1:
+        raise SpecError("catalog acceptance case is missing or ambiguous")
+    case = cases[0]
+    if case["modality"] != "cli" or case["input"].get("command") != "catalog" or case["expected"].get("kind") != "exact":
+        raise SpecError("catalog acceptance case is unsupported")
+    component_id = case["input"].get("component_id")
+    if not isinstance(component_id, str) or not component_id:
+        raise SpecError("catalog acceptance input needs a component_id")
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(repo / "src")
+    command = [sys.executable, "-m", "specctl", "catalog", component_id]
+    try:
+        observed_run = subprocess.run(command, cwd=repo, env=env, capture_output=True, timeout=60)
+    except subprocess.TimeoutExpired as exc:
+        raise SpecError("catalog acceptance timed out") from exc
+    if observed_run.returncode:
+        raise SpecError("catalog acceptance command failed")
+    observed = decode_json(observed_run.stdout, "catalog acceptance output")
+    expected = case["expected"]["value"]
+    if observed != expected:
+        raise SpecError("catalog acceptance response differs from expected result")
+    test_command = [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-q"]
+    try:
+        tests = subprocess.run(test_command, cwd=repo, env=env, capture_output=True, timeout=180)
+    except subprocess.TimeoutExpired as exc:
+        raise SpecError("candidate unit tests timed out") from exc
+    if tests.returncode:
+        raise SpecError("candidate unit tests failed")
+    return {
+        "version": 1,
+        "candidate_id": record["candidate_id"],
+        "status": "passed",
+        "python_version": ".".join(str(part) for part in sys.version_info[:3]),
+        "rebuild_sha256": record["artifact"]["sha256"],
+        "acceptance": {"case_id": case["id"], "input": case["input"], "expected": expected, "observed": observed, "passed": True},
+        "tests": {"command": "python -m unittest discover -s tests -q", "exit_code": tests.returncode, "stdout_sha256": _sha(tests.stdout), "stderr_sha256": _sha(tests.stderr)},
+    }
 
 
 def verify_current(repo: Path) -> dict:
     """Reconstruct current generated output from its pinned source revision."""
     repo = Path(repo).resolve()
     pointer_path = repo / CURRENT_POINTER
-    pointer = decode_json(pointer_path.read_bytes(), str(pointer_path))
+    try:
+        pointer = decode_json(pointer_path.read_bytes(), str(pointer_path))
+    except OSError as exc:
+        raise SpecError(f"current candidate pointer is missing: {exc}") from exc
     if not isinstance(pointer, dict) or set(pointer) != {"candidate_id"} or not isinstance(pointer["candidate_id"], str) or not re.fullmatch(r"[0-9a-f]{64}", pointer["candidate_id"]):
         raise SpecError("invalid current candidate pointer")
     record_path = repo / ".verity" / "candidates" / pointer["candidate_id"] / "candidate.json"
-    record = decode_json(record_path.read_bytes(), str(record_path))
+    try:
+        record = decode_json(record_path.read_bytes(), str(record_path))
+    except OSError as exc:
+        raise SpecError(f"candidate record is missing: {exc}") from exc
     if not isinstance(record, dict) or record.get("candidate_id") != pointer["candidate_id"]:
         raise SpecError("candidate record ID does not match current pointer")
+    if not isinstance(record.get("index_path"), str) or not isinstance(record.get("spec_revision"), str):
+        raise SpecError("candidate record has invalid index path or revision")
     planned = plan_candidate(repo / record["index_path"], record["spec_revision"], repo)
     if {key: value for key, value in record.items() if key != "artifact"} != planned:
         raise SpecError("candidate record differs from pinned revision")
@@ -179,4 +233,14 @@ def verify_current(repo: Path) -> dict:
     artifact = repo / catalog_generator.OUTPUT_PATH
     if not artifact.exists() or artifact.read_bytes() != generated:
         raise SpecError("candidate artifact differs from reconstruction")
+    evidence_path = repo / ".verity" / "candidates" / pointer["candidate_id"] / "evidence.json"
+    try:
+        evidence = decode_json(evidence_path.read_bytes(), str(evidence_path))
+    except OSError as exc:
+        raise SpecError(f"candidate evidence is missing: {exc}") from exc
+    if not isinstance(evidence, dict) or evidence.get("candidate_id") != record["candidate_id"] or evidence.get("status") != "passed" or evidence.get("rebuild_sha256") != record["artifact"]["sha256"]:
+        raise SpecError("candidate evidence does not identify a passing build")
+    fresh = evaluate_candidate(record, repo)
+    if evidence.get("acceptance") != fresh["acceptance"] or evidence.get("tests", {}).get("exit_code") != 0:
+        raise SpecError("candidate evidence does not match current evaluation")
     return record
