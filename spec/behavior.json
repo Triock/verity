@@ -2,9 +2,11 @@
   "version": 1,
   "requirements": [
     {"id": "validate-model", "use_case_id": "inspect-spec", "statement": "Reject malformed or inconsistent specification records and dependencies", "contract_ids": ["validated-spec"]},
-    {"id": "inspect-model", "use_case_id": "inspect-spec", "statement": "Expose validation, build order, impact, and canonical resolution through the command line", "contract_ids": ["validated-spec"]}
+    {"id": "inspect-model", "use_case_id": "inspect-spec", "statement": "Expose validation, build order, impact, and canonical resolution through the command line", "contract_ids": ["validated-spec"]},
+    {"id": "query-catalog", "use_case_id": "inspect-catalog", "statement": "Return a component's declared kind, language, dependencies, requirements, contracts, and data sets from rebuildable generated code", "contract_ids": ["catalog-query"]}
   ],
   "contracts": [
-    {"id": "validated-spec", "revision": "1", "description": "The specification model validates records and exposes a component graph to consumers"}
+    {"id": "validated-spec", "revision": "1", "description": "The specification model validates records and exposes a component graph to consumers"},
+    {"id": "catalog-query", "revision": "1", "description": "Query stable component declarations by identifier from the generated catalog"}
   ]
 }

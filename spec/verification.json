@@ -10,6 +10,26 @@
       "expected": {"kind": "rubric", "text": "The command exits unsuccessfully and identifies the invalid field or reference"}
     },
     {
+      "id": "query-component-catalog",
+      "requirement_ids": ["query-catalog"],
+      "target_component": "component-catalog",
+      "modality": "cli",
+      "input": {"command": "catalog", "component_id": "spec-model"},
+      "expected": {
+        "kind": "exact",
+        "value": {
+          "id": "spec-model",
+          "kind": "library",
+          "language": "python",
+          "depends_on": [],
+          "data_sets": [],
+          "implements": ["validate-model"],
+          "provides": [{"contract_id": "validated-spec", "revision": "1"}],
+          "requires": []
+        }
+      }
+    },
+    {
       "id": "resolve-self-spec",
       "requirement_ids": ["inspect-model"],
       "target_component": "specctl",

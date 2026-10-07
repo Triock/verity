@@ -2,6 +2,15 @@
   "version": 1,
   "components": [
     {"component_id": "spec-model", "mode": "bootstrap", "source_path": "src/specctl/spec.py"},
+    {
+      "component_id": "component-catalog",
+      "mode": "generated",
+      "generator": {"id": "component-catalog-v1", "version": "1", "sha256": "f90cb12b1f6bea3cebd078d9501e2f3c1dfcfaeff2870d34e9aaa0078bb94dfa"},
+      "toolchains": {"python-recipe": "f12aca6d1997ad7572f48730fdb8894aae4fc0342e8b4cccb59badd8c323616f"},
+      "inputs": {"output_path": "src/specctl/generated_catalog.py"},
+      "requirements": ["query-catalog"],
+      "contracts": ["catalog-query", "validated-spec"]
+    },
     {"component_id": "specctl", "mode": "bootstrap", "source_path": "src/specctl/cli.py"}
   ]
 }
