@@ -76,6 +76,14 @@ class CandidatePublishTests(unittest.TestCase):
             with self.assertRaises(Exception):
                 git(remote, "show-ref", "--verify", "-q", "refs/heads/feat/catalog-candidate")
 
+    def test_rejects_push_url_to_other_account(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo, remote, token = self.setup_repo(directory)
+            git(repo, "remote", "set-url", "--push", "origin", "https://github.com/RichardHillman-Aderant/verity.git")
+            with self.assertRaisesRegex(SpecError, "push URL"):
+                self.submit(repo, remote, token)
+            self.assertEqual(len(self.api.posts), 0)
+
     def test_rejects_dirty_branch_and_missing_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             repo, remote, token = self.setup_repo(directory)

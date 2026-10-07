@@ -38,6 +38,13 @@ def _sha(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
+def _test_output_sha(content: bytes) -> str:
+    """Exclude unittest's elapsed time from the observable output digest."""
+    output = content.decode("utf-8", errors="replace")
+    output = re.sub(r"Ran (\d+) tests? in [0-9.]+s", r"Ran \1 tests in <duration>s", output)
+    return _sha(output.encode("utf-8"))
+
+
 def _committed_bytes(repo: Path, revision: str, relative: str) -> bytes:
     return _git(repo, "show", f"{revision}:{relative}")
 
@@ -128,8 +135,11 @@ def _render_twice(index_path: Path) -> bytes:
 
 
 def _write_json(path: Path, value: dict) -> None:
+    _write_bytes(path, canonical_bytes(value) + b"\n")
+
+
+def _write_bytes(path: Path, content: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    content = canonical_bytes(value) + b"\n"
     with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as staged:
         staged.write(content)
         staged_name = staged.name
@@ -147,17 +157,21 @@ def build_candidate(index_path: Path, revision: str, repo: Path) -> dict:
     record_path = repo / ".verity" / "candidates" / record["candidate_id"] / "candidate.json"
     if record_path.exists() and decode_json(record_path.read_bytes(), str(record_path)) != record:
         raise SpecError("existing candidate record conflicts with pinned inputs")
-    if artifact_path.exists() and artifact_path.read_bytes() != generated:
+    prior_artifact = artifact_path.read_bytes() if artifact_path.exists() else None
+    if prior_artifact is not None and prior_artifact != generated:
         raise SpecError("existing artifact conflicts with pinned candidate")
-    artifact_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(dir=artifact_path.parent, delete=False) as staged:
-        staged.write(generated)
-        staged_name = staged.name
-    os.replace(staged_name, artifact_path)
+    _write_bytes(artifact_path, generated)
+    try:
+        evidence = evaluate_candidate(record, repo)
+    except Exception:
+        if prior_artifact is None:
+            artifact_path.unlink(missing_ok=True)
+        else:
+            _write_bytes(artifact_path, prior_artifact)
+        raise
     _write_json(record_path, record)
-    _write_json(repo / CURRENT_POINTER, {"candidate_id": record["candidate_id"]})
-    evidence = evaluate_candidate(record, repo)
     _write_json(record_path.parent / "evidence.json", evidence)
+    _write_json(repo / CURRENT_POINTER, {"candidate_id": record["candidate_id"]})
     return record
 
 
@@ -201,7 +215,7 @@ def evaluate_candidate(record: dict, repo: Path) -> dict:
         "python_version": ".".join(str(part) for part in sys.version_info[:3]),
         "rebuild_sha256": record["artifact"]["sha256"],
         "acceptance": {"case_id": case["id"], "input": case["input"], "expected": expected, "observed": observed, "passed": True},
-        "tests": {"command": "python -m unittest discover -s tests -q", "exit_code": tests.returncode, "stdout_sha256": _sha(tests.stdout), "stderr_sha256": _sha(tests.stderr)},
+        "tests": {"command": "python -m unittest discover -s tests -q", "exit_code": tests.returncode, "stdout_sha256": _test_output_sha(tests.stdout), "stderr_sha256": _test_output_sha(tests.stderr)},
     }
 
 
@@ -240,7 +254,13 @@ def verify_current(repo: Path) -> dict:
         raise SpecError(f"candidate evidence is missing: {exc}") from exc
     if not isinstance(evidence, dict) or evidence.get("candidate_id") != record["candidate_id"] or evidence.get("status") != "passed" or evidence.get("rebuild_sha256") != record["artifact"]["sha256"]:
         raise SpecError("candidate evidence does not identify a passing build")
+    if set(evidence) != {"version", "candidate_id", "status", "python_version", "rebuild_sha256", "acceptance", "tests"} or evidence["version"] != 1:
+        raise SpecError("candidate evidence has an invalid schema")
+    version = evidence["python_version"]
+    match = re.fullmatch(r"3\.(\d+)\.(\d+)", version) if isinstance(version, str) else None
+    if match is None or int(match.group(1)) < 11:
+        raise SpecError("candidate evidence has an invalid Python version")
     fresh = evaluate_candidate(record, repo)
-    if evidence.get("acceptance") != fresh["acceptance"] or evidence.get("tests", {}).get("exit_code") != 0:
+    if evidence.get("acceptance") != fresh["acceptance"] or evidence.get("tests") != fresh["tests"]:
         raise SpecError("candidate evidence does not match current evaluation")
     return record

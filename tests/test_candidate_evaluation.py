@@ -75,6 +75,41 @@ class CandidateEvaluationTests(unittest.TestCase):
                 build_candidate(repo / "spec" / "solution.json", revision, repo)
             self.assertFalse(list((repo / ".verity" / "candidates").glob("*/evidence.json")))
 
+    def test_failed_new_candidate_preserves_previous_current_pointer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo, revision = candidate_repo(directory)
+            first = build_candidate(repo / "spec" / "solution.json", revision, repo)
+            pointer = repo / ".verity" / "candidates" / "current.json"
+            before = pointer.read_bytes()
+            product = repo / "spec" / "product.json"
+            product.write_text(product.read_text().replace("Inspect declared", "Review declared"))
+            git(repo, "add", ".")
+            git(repo, "-c", "user.name=Richard Hillman", "-c", "user.email=triock@gmail.com", "commit", "-qm", "new intent")
+            (repo / "tests" / "test_smoke.py").write_text("import unittest\n\nclass Smoke(unittest.TestCase):\n    def test_works(self):\n        self.fail('broken')\n")
+            with self.assertRaisesRegex(SpecError, "unit tests"):
+                build_candidate(repo / "spec" / "solution.json", git(repo, "rev-parse", "HEAD"), repo)
+            self.assertEqual(pointer.read_bytes(), before)
+            self.assertEqual(json.loads(before)["candidate_id"], first["candidate_id"])
+
+    def test_verify_rejects_altered_evidence_fields(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo, revision = candidate_repo(directory)
+            record = build_candidate(repo / "spec" / "solution.json", revision, repo)
+            path = repo / ".verity" / "candidates" / record["candidate_id"] / "evidence.json"
+            original = json.loads(path.read_text())
+            for section, field, value in (
+                ("tests", "command", "false"),
+                ("tests", "stderr_sha256", "0" * 64),
+                (None, "python_version", "9.9.9"),
+            ):
+                with self.subTest(field=field):
+                    altered = json.loads(json.dumps(original))
+                    target = altered if section is None else altered[section]
+                    target[field] = value
+                    path.write_text(json.dumps(altered))
+                    with self.assertRaisesRegex(SpecError, "evidence"):
+                        verify_current(repo)
+
 
 if __name__ == "__main__":
     unittest.main()

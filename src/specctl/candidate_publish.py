@@ -109,8 +109,10 @@ def submit_candidate(
     if _git(repo, "branch", "--show-current").decode().strip() != branch or branch == "main":
         raise SpecError("candidate branch does not match the current non-main branch")
     _git(repo, "check-ref-format", "--branch", branch)
-    if _git(repo, "remote", "get-url", "origin").decode().strip() != expected_origin:
+    if _git(repo, "remote", "get-url", "--all", "origin").decode().splitlines() != [expected_origin]:
         raise SpecError("origin does not match the approved Triock repository")
+    if _git(repo, "remote", "get-url", "--all", "--push", "origin").decode().splitlines() != [expected_origin]:
+        raise SpecError("origin push URL does not match the approved Triock repository")
     if _git(repo, "status", "--porcelain").strip():
         raise SpecError("candidate branch must be clean before submission")
     record = verify_current(repo)
