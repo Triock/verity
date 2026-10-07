@@ -31,3 +31,5 @@ jobs:
           python -m specctl order spec/solution.json
           python -m specctl impact spec/solution.json spec-model --direction consumers
           python -m specctl resolve spec/solution.json
+      - name: Verify pinned generated candidate
+        run: python -m specctl candidate verify-current
