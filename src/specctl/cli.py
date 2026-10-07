@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .graph import build_order, change_impact
 from .candidate import build_candidate, verify_current
+from .candidate_publish import submit_candidate
 from .release import ReleaseError, compile_release
 from .spec import SpecError, decode_json, parse_spec
 from .v2_resolve import resolve_v2
@@ -39,6 +40,9 @@ def _parser() -> argparse.ArgumentParser:
     build.add_argument("index")
     build.add_argument("--revision", required=True)
     candidate_commands.add_parser("verify-current")
+    submit = candidate_commands.add_parser("submit")
+    submit.add_argument("--branch", required=True)
+    submit.add_argument("--token-file", required=True)
     return parser
 
 
@@ -96,8 +100,10 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "candidate":
             if args.candidate_command == "build":
                 result = build_candidate(Path(args.index), args.revision, Path.cwd())
-            else:
+            elif args.candidate_command == "verify-current":
                 result = verify_current(Path.cwd())
+            else:
+                result = {"pr_url": submit_candidate(Path.cwd(), Path(args.token_file), args.branch)}
         elif args.command == "lock":
             spec, spec_digest, artifacts = _read_lock_inputs(args.spec, args.artifacts_json)
             result = compile_release(spec, spec_digest, artifacts)
