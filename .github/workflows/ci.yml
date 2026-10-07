@@ -19,6 +19,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -31,3 +32,5 @@ jobs:
           python -m specctl order spec/solution.json
           python -m specctl impact spec/solution.json spec-model --direction consumers
           python -m specctl resolve spec/solution.json
+      - name: Verify pinned generated candidate
+        run: python -m specctl candidate verify-current

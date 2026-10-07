@@ -4,6 +4,7 @@
     {"id": "spec-author", "name": "Specification author"}
   ],
   "use_cases": [
-    {"id": "inspect-spec", "actor_id": "spec-author", "goal": "Validate and inspect the service specification before implementation"}
+    {"id": "inspect-spec", "actor_id": "spec-author", "goal": "Validate and inspect the service specification before implementation"},
+    {"id": "inspect-catalog", "actor_id": "spec-author", "goal": "Inspect declared component interfaces and dependencies from generated code"}
   ]
 }

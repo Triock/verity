@@ -12,14 +12,27 @@
       "requires": []
     },
     {
-      "id": "specctl",
-      "kind": "application",
+      "id": "component-catalog",
+      "kind": "library",
       "language": "python",
       "depends_on": ["spec-model"],
       "data_sets": [],
+      "implements": ["query-catalog"],
+      "provides": ["catalog-query"],
+      "requires": [{"contract_id": "validated-spec", "accepted_revisions": ["1"]}]
+    },
+    {
+      "id": "specctl",
+      "kind": "application",
+      "language": "python",
+      "depends_on": ["spec-model", "component-catalog"],
+      "data_sets": [],
       "implements": ["inspect-model"],
       "provides": [],
-      "requires": [{"contract_id": "validated-spec", "accepted_revisions": ["1"]}]
+      "requires": [
+        {"contract_id": "validated-spec", "accepted_revisions": ["1"]},
+        {"contract_id": "catalog-query", "accepted_revisions": ["1"]}
+      ]
     }
   ]
 }
