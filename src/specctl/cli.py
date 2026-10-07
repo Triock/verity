@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .graph import build_order, change_impact
 from .candidate import build_candidate, verify_current
-from .candidate_publish import submit_candidate
+from .candidate_publish import ORIGIN, _git, submit_candidate
 from .github_issues import fetch_issue
 from .issue_registry import record_issue
 from .release import ReleaseError, compile_release
@@ -91,11 +91,21 @@ def _read_spec(path: str):
         raise SpecError(f"{source}: {exc}") from exc
 
 
+def _issue_repo() -> Path:
+    checkout = Path.cwd()
+    root = Path(_git(checkout, "rev-parse", "--show-toplevel").decode().strip())
+    if _git(root, "remote", "get-url", "--all", "origin").decode().splitlines() != [ORIGIN]:
+        raise SpecError("issue import requires a Triock/verity origin")
+    if _git(root, "remote", "get-url", "--all", "--push", "origin").decode().splitlines() != [ORIGIN]:
+        raise SpecError("issue import requires a Triock/verity push URL")
+    return root
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
         if args.command == "issue":
-            result = record_issue(Path.cwd(), fetch_issue(args.number, Path(args.token_file)))
+            result = record_issue(_issue_repo(), fetch_issue(args.number, Path(args.token_file)))
         elif args.command == "catalog":
             try:
                 from .generated_catalog import get_component
