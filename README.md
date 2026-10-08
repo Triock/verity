@@ -16,6 +16,16 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 
 GitHub Actions runs these tests, self-spec commands, and current-candidate reconstruction on pull requests and pushes to `main`.
 
+## GitHub Issue intake
+
+An issue in `Triock/verity` can be captured as an input after a maintainer adds the `verity:ready` label. The Triock GitHub App needs repository **Issues: Read-only** permission. Use a short-lived installation token in a file owned by your user and readable only by that user:
+
+```bash
+PYTHONPATH=src python3 -m specctl issue import 7 --token-file /path/to/installation-token
+```
+
+The command accepts only an open issue in the selected repository, rejects pull requests, and verifies that the token can see only `Triock/verity`. It writes an immutable observed snapshot and a current pointer under `.verity/issues/github/7/`. It does not execute issue text, change the issue or spec, start generation, or create a branch. Its JSON result says `"committed":false`: **the files are local until they are committed and pushed to Git**. Keep the issue snapshot in the review branch when proposing a spec change. Re-importing the same revision is idempotent; an older issue revision cannot replace the current one. The first controller slice will automate branch creation, remote persistence, and workflow resume.
+
 The resolved output includes exact source-byte digests, a semantic digest, and `bootstrap_components`. The generated catalog can be removed and reconstructed byte-for-byte from a committed spec revision and pinned generator and Python recipe:
 
 ```bash

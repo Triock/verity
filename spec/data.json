@@ -1,4 +1,22 @@
 {
   "version": 1,
-  "data_sets": []
+  "data_sets": [
+    {
+      "id": "issue-snapshots",
+      "owner": "specctl",
+      "schema_version": 1,
+      "invariants": [
+        "Each snapshot digest matches its canonical JSON bytes",
+        "The current pointer references an existing snapshot for the same GitHub issue",
+        "An older source update cannot replace a newer current snapshot",
+        "A local import is not acknowledged as remotely durable until its Git commit and push succeed"
+      ],
+      "retention_days": 3650,
+      "migration": {
+        "strategy": "Read schema version 1 snapshots; write a new version alongside old snapshots before switching readers",
+        "rollback": "Restore the previous current pointer and reader while retaining all snapshots"
+      },
+      "recovery": {"rpo_minutes": 0, "rto_minutes": 1440, "backup_retention_days": 30}
+    }
+  ]
 }

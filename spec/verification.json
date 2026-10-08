@@ -36,6 +36,14 @@
       "modality": "cli",
       "input": {"command": "resolve", "spec": "spec/solution.json"},
       "expected": {"kind": "rubric", "text": "The command emits a v2 resolved document and stable semantic digest"}
+    },
+    {
+      "id": "record-ready-github-issue",
+      "requirement_ids": ["import-github-issue"],
+      "target_component": "specctl",
+      "modality": "cli",
+      "input": {"command": "issue import", "repository": "Triock/verity", "number": 1, "label": "verity:ready"},
+      "expected": {"kind": "rubric", "text": "An open, labeled issue creates one immutable local snapshot and current pointer; replay is idempotent, stale or untriaged issues are rejected, and the result says the files are uncommitted"}
     }
   ]
 }

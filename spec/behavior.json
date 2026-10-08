@@ -3,10 +3,12 @@
   "requirements": [
     {"id": "validate-model", "use_case_id": "inspect-spec", "statement": "Reject malformed or inconsistent specification records and dependencies", "contract_ids": ["validated-spec"]},
     {"id": "inspect-model", "use_case_id": "inspect-spec", "statement": "Expose validation, build order, impact, and canonical resolution through the command line", "contract_ids": ["validated-spec"]},
-    {"id": "query-catalog", "use_case_id": "inspect-catalog", "statement": "Return a component's declared kind, language, dependencies, requirements, contracts, and data sets from rebuildable generated code", "contract_ids": ["catalog-query"]}
+    {"id": "query-catalog", "use_case_id": "inspect-catalog", "statement": "Return a component's declared kind, language, dependencies, requirements, contracts, and data sets from rebuildable generated code", "contract_ids": ["catalog-query"]},
+    {"id": "import-github-issue", "use_case_id": "capture-issue", "statement": "Read an open Triock/verity GitHub issue bearing the verity:ready label and atomically record a versioned local snapshot without executing issue content or claiming remote durability", "contract_ids": ["issue-intake"]}
   ],
   "contracts": [
     {"id": "validated-spec", "revision": "1", "description": "The specification model validates records and exposes a component graph to consumers"},
-    {"id": "catalog-query", "revision": "1", "description": "Query stable component declarations by identifier from the generated catalog"}
+    {"id": "catalog-query", "revision": "1", "description": "Query stable component declarations by identifier from the generated catalog"},
+    {"id": "issue-intake", "revision": "1", "description": "Capture a validated GitHub issue snapshot and its current local pointer by source identity"}
   ]
 }
