@@ -24,7 +24,15 @@ An issue in `Triock/verity` can be captured as an input after a maintainer adds 
 PYTHONPATH=src python3 -m specctl issue import 7 --token-file /path/to/installation-token
 ```
 
-The command accepts only an open issue in the selected repository, rejects pull requests, and verifies that the token can see only `Triock/verity`. It writes an immutable observed snapshot and a current pointer under `.verity/issues/github/7/`. It does not execute issue text, change the issue or spec, start generation, or create a branch. Its JSON result says `"committed":false`: **the files are local until they are committed and pushed to Git**. Keep the issue snapshot in the review branch when proposing a spec change. Re-importing the same revision is idempotent; an older issue revision cannot replace the current one. The first controller slice will automate branch creation, remote persistence, and workflow resume.
+The import command accepts only an open issue in the selected repository, rejects pull requests, and verifies that the token can see only `Triock/verity`. It writes an immutable observed snapshot and a current pointer under `.verity/issues/github/7/`. It does not execute issue text, change the issue or spec, start generation, or create a branch. Its JSON result says `"committed":false`: **the files are local until they are committed and pushed to Git**. Re-importing the same revision is idempotent; an older issue revision cannot replace the current one.
+
+To persist a ready issue and start its Git workflow, run this from a clean `main` checkout (or its existing `verity/issue-NUMBER` branch) using a short-lived App token with Issues read and Contents write access:
+
+```bash
+PYTHONPATH=src python3 -m specctl issue start 7 --token-file /path/to/installation-token
+```
+
+`issue start` creates or resumes `verity/issue-7`, commits only the issue snapshot, current pointer, and `workflow.json`, and pushes the branch with an exact expected-ref lease. It checks the committed bytes and remote SHA before reporting `durable:true`. Repeating the command with the same issue revision makes no new commit; repeating after an interrupted push resumes it. The branch holds an `awaiting-spec` workflow record. The issue still requires a reviewed spec change before generation or a candidate PR. See the [durable workflow design](docs/superpowers/specs/2026-10-11-durable-issue-workflow-design.md).
 
 The resolved output includes exact source-byte digests, a semantic digest, and `bootstrap_components`. The generated catalog can be removed and reconstructed byte-for-byte from a committed spec revision and pinned generator and Python recipe:
 

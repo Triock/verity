@@ -27,8 +27,8 @@
       "language": "python",
       "depends_on": ["spec-model", "component-catalog"],
       "data_sets": ["issue-snapshots"],
-      "implements": ["inspect-model", "import-github-issue"],
-      "provides": ["issue-intake"],
+      "implements": ["inspect-model", "import-github-issue", "persist-issue-workflow"],
+      "provides": ["issue-intake", "issue-workflow"],
       "requires": [
         {"contract_id": "validated-spec", "accepted_revisions": ["1"]},
         {"contract_id": "catalog-query", "accepted_revisions": ["1"]}

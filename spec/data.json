@@ -9,7 +9,9 @@
         "Each snapshot digest matches its canonical JSON bytes",
         "The current pointer references an existing snapshot for the same GitHub issue",
         "An older source update cannot replace a newer current snapshot",
-        "A local import is not acknowledged as remotely durable until its Git commit and push succeed"
+        "A local import is not acknowledged as remotely durable until its Git commit and push succeed",
+        "Workflow state identifies the same source issue, fixed branch, and current snapshot digest",
+        "Remote durability is acknowledged only when the branch ref resolves to the committed workflow revision"
       ],
       "retention_days": 3650,
       "migration": {

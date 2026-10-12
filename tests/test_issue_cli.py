@@ -13,6 +13,26 @@ from tests.test_issue_registry import snapshot
 
 
 class IssueCliTests(unittest.TestCase):
+    def test_start_dispatches_validated_issue_to_workflow(self):
+        with tempfile.TemporaryDirectory() as directory:
+            subprocess.run(["git", "init", "-q", directory], check=True)
+            subprocess.run(["git", "remote", "add", "origin", "https://github.com/Triock/verity.git"], cwd=directory, check=True)
+            previous = Path.cwd()
+            try:
+                os.chdir(directory)
+                output = io.StringIO()
+                expected = {"branch": "verity/issue-7", "durable": True}
+                with patch("specctl.cli.fetch_issue", return_value=snapshot()) as fetched:
+                    with patch("specctl.cli.start_issue", return_value=expected) as started:
+                        with redirect_stdout(output):
+                            status = main(["issue", "start", "7", "--token-file", "/tmp/token"])
+            finally:
+                os.chdir(previous)
+            self.assertEqual(status, 0)
+            self.assertEqual(json.loads(output.getvalue()), expected)
+            fetched.assert_called_once_with(7, Path("/tmp/token"))
+            started.assert_called_once_with(Path(directory), snapshot(), Path("/tmp/token"))
+
     def test_import_records_issue_without_claiming_commit(self):
         with tempfile.TemporaryDirectory() as directory:
             subprocess.run(["git", "init", "-q", directory], check=True)

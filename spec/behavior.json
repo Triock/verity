@@ -4,11 +4,13 @@
     {"id": "validate-model", "use_case_id": "inspect-spec", "statement": "Reject malformed or inconsistent specification records and dependencies", "contract_ids": ["validated-spec"]},
     {"id": "inspect-model", "use_case_id": "inspect-spec", "statement": "Expose validation, build order, impact, and canonical resolution through the command line", "contract_ids": ["validated-spec"]},
     {"id": "query-catalog", "use_case_id": "inspect-catalog", "statement": "Return a component's declared kind, language, dependencies, requirements, contracts, and data sets from rebuildable generated code", "contract_ids": ["catalog-query"]},
-    {"id": "import-github-issue", "use_case_id": "capture-issue", "statement": "Read an open Triock/verity GitHub issue bearing the verity:ready label and atomically record a versioned local snapshot without executing issue content or claiming remote durability", "contract_ids": ["issue-intake"]}
+    {"id": "import-github-issue", "use_case_id": "capture-issue", "statement": "Read an open Triock/verity GitHub issue bearing the verity:ready label and atomically record a versioned local snapshot without executing issue content or claiming remote durability", "contract_ids": ["issue-intake"]},
+    {"id": "persist-issue-workflow", "use_case_id": "start-issue-workflow", "statement": "Commit a ready issue snapshot and awaiting-spec workflow record to its fixed Git branch, resume safely, and acknowledge remote durability only after exact SHA confirmation", "contract_ids": ["issue-workflow"]}
   ],
   "contracts": [
     {"id": "validated-spec", "revision": "1", "description": "The specification model validates records and exposes a component graph to consumers"},
     {"id": "catalog-query", "revision": "1", "description": "Query stable component declarations by identifier from the generated catalog"},
-    {"id": "issue-intake", "revision": "1", "description": "Capture a validated GitHub issue snapshot and its current local pointer by source identity"}
+    {"id": "issue-intake", "revision": "1", "description": "Capture a validated GitHub issue snapshot and its current local pointer by source identity"},
+    {"id": "issue-workflow", "revision": "1", "description": "Persist one issue's input and awaiting-spec state on a confirmed remote Git branch"}
   ]
 }
