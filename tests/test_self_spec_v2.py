@@ -37,6 +37,12 @@ class SelfSpecTests(unittest.TestCase):
         self.assertEqual(datasets["issue-snapshots"]["owner"], "specctl")
         self.assertIn("issue-snapshots", components["specctl"]["data_sets"])
         self.assertEqual(cases["record-ready-github-issue"]["target_component"], "specctl")
+        self.assertIn("start-issue-workflow", use_cases)
+        self.assertIn("persist-issue-workflow", requirements)
+        self.assertIn("issue-workflow", contracts)
+        self.assertIn("persist-issue-workflow", components["specctl"]["implements"])
+        self.assertIn("issue-workflow", components["specctl"]["provides"])
+        self.assertEqual(cases["persist-ready-issue-workflow"]["target_component"], "specctl")
 
 
 if __name__ == "__main__":

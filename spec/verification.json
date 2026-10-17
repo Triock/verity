@@ -44,6 +44,14 @@
       "modality": "cli",
       "input": {"command": "issue import", "repository": "Triock/verity", "number": 1, "label": "verity:ready"},
       "expected": {"kind": "rubric", "text": "An open, labeled issue creates one immutable local snapshot and current pointer; replay is idempotent, stale or untriaged issues are rejected, and the result says the files are uncommitted"}
+    },
+    {
+      "id": "persist-ready-issue-workflow",
+      "requirement_ids": ["persist-issue-workflow"],
+      "target_component": "specctl",
+      "modality": "cli",
+      "input": {"command": "issue start", "repository": "Triock/verity", "number": 1, "label": "verity:ready"},
+      "expected": {"kind": "rubric", "text": "A verified branch contains the issue snapshot and awaiting-spec workflow record; exact remote SHA confirmation acknowledges durability; replay creates no duplicate commit and a failed push reports no durability"}
     }
   ]
 }
